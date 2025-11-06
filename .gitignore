@@ -1,0 +1,61 @@
+# --- Raíz / Visual Studio ---
+.vs/
+*.suo
+*.user
+*.userosscache
+*.sln.docstates
+.vscode/
+.idea/
+
+# --- Artefactos de compilación (solución/proyecto) ---
+**/bin/
+**/obj/
+Debug*/
+Release*/
+x64/
+x86/
+[Aa][Rr][Mm]*/
+[Aa][Rr][Mm]64/
+
+# --- Proyecto específico (por claridad) ---
+Proyecto_Analisis_API/bin/
+Proyecto_Analisis_API/obj/
+Proyecto_Analisis_API/publish/
+Proyecto_Analisis_API/App_Data/
+Proyecto_Analisis_API/IISExpress/
+
+# --- ASP.NET Core / Publicación ---
+**/Properties/ServiceDependencies/**/profiles/*
+**/Properties/PublishProfiles/*.pubxml.user
+**/Properties/PublishProfiles/*Secret*
+artifacts/
+
+# --- Paquetes / NuGet ---
+packages/
+*.nupkg
+*.snupkg
+*.nuget.props
+*.nuget.targets
+
+# --- Tests / Benchmark ---
+TestResults/
+*.trx
+*.coverage
+*.coveragexml
+BenchmarkDotNet.Artifacts/
+
+# --- Logs / misceláneos ---
+*.log
+*.svclog
+*.tmp
+*.temp
+~$*
+*.swp
+*.swo
+*.orig
+Thumbs.db
+.DS_Store
+
+# --- Configs locales / secretos ---
+secrets.json
+appsettings.*.local.json
