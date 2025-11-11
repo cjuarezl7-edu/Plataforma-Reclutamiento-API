@@ -1,4 +1,4 @@
-//var builder = WebApplication.CreateBuilder(args);
+﻿//var builder = WebApplication.CreateBuilder(args);
 
 //// Add services to the container.
 
@@ -8,7 +8,7 @@
 //    options.AddPolicy("AllowAllOrigins",
 //        builder => builder.AllowAnyOrigin()  // Permitir solicitudes desde cualquier origen
 //                          .AllowAnyHeader()  // Permitir cualquier encabezado
-//                          .AllowAnyMethod()); // Permitir cualquier m�todo (GET, POST, etc.)
+//                          .AllowAnyMethod()); // Permitir cualquier método (GET, POST, etc.)
 //});
 
 //builder.Services.AddControllers();
@@ -38,6 +38,7 @@
 ///
 
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.Extensions.FileProviders;
 using Microsoft.IdentityModel.Tokens;
 using System.Text;
 
@@ -46,19 +47,23 @@ var builder = WebApplication.CreateBuilder(args);
 // ===== CORS =====
 builder.Services.AddCors(options =>
 {
-    options.AddPolicy("Allowlocalhost",
-        p => p.WithOrigins("http://localhost:3000", "http://192.168.249.63:3000") // Aqu� se puede agregar otros or�genes permitidos
-              .AllowAnyHeader()
-              .AllowAnyMethod()
-        // .AllowCredentials() // <-- habil�tar solo si realmente lo se necesita
-        );
+    options.AddPolicy("Allowlocalhost", p =>
+        p.WithOrigins(
+              "http://localhost:3000",
+              "http://192.168.249.63:3000",
+              "http://cjuarez99-001-site1.anytempurl.com"   // <- tu dominio público (http)
+                                                            // añade "https://..." cuando migres a https
+          )
+         .AllowAnyHeader()
+         .AllowAnyMethod()
+    // .AllowCredentials() // habilítalo solo si realmente lo necesitas
+    );
 });
 
 // ===== Controllers + JSON =====
 builder.Services.AddControllers()
     .AddJsonOptions(opts =>
     {
-        // Mantiene los nombres EXACTOS de tus propiedades C#
         opts.JsonSerializerOptions.PropertyNamingPolicy = null;
         opts.JsonSerializerOptions.DictionaryKeyPolicy = null;
     });
@@ -75,7 +80,7 @@ builder.Services
   .AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
   .AddJwtBearer(opt =>
   {
-      opt.TokenValidationParameters = new Microsoft.IdentityModel.Tokens.TokenValidationParameters
+      opt.TokenValidationParameters = new TokenValidationParameters
       {
           ValidateIssuer = true,
           ValidateAudience = true,
@@ -83,7 +88,7 @@ builder.Services
           ValidIssuer = jwt["Issuer"],
           ValidAudience = jwt["Audience"],
           IssuerSigningKey = new SymmetricSecurityKey(keyBytes),
-          ClockSkew = TimeSpan.Zero // tokens expiran exactamente cuando deben
+          ClockSkew = TimeSpan.Zero
       };
   });
 
@@ -91,19 +96,37 @@ builder.Services.AddAuthorization();
 
 var app = builder.Build();
 
-// ===== Pipeline =====
-//if (app.Environment.IsDevelopment())
-//{
-    app.UseSwagger();
-    app.UseSwaggerUI();
-//}
+// ===== Swagger siempre (si gustas condicionarlo a Dev, ok) =====
+app.UseSwagger();
+app.UseSwaggerUI();
 
-app.UseHttpsRedirection();
-app.UseCors("Allowlocalhost"); // 1) CORS
-app.UseAuthentication();            // 2) Auth (JWT)
-app.UseAuthorization();             // 3) Authorization
+// ===== Static Files =====
+// Sirve wwwroot
+app.UseStaticFiles();
+
+// Asegura carpeta wwwroot/uploads y mapea /uploads
+var webRoot = app.Environment.WebRootPath ?? Path.Combine(Directory.GetCurrentDirectory(), "wwwroot");
+var uploadsPath = Path.Combine(webRoot, "uploads");
+Directory.CreateDirectory(uploadsPath);
+
+app.UseStaticFiles(new StaticFileOptions
+{
+    FileProvider = new PhysicalFileProvider(uploadsPath),
+    RequestPath = "/uploads",
+    ServeUnknownFileTypes = true,              // opcional, por si no detecta MIME
+    DefaultContentType = "application/octet-stream"
+});
+
+// ⚠️ Si tu sitio público está en HTTP, mejor NO fuerces HTTPS.
+// app.UseHttpsRedirection(); // <-- desactivado mientras uses sólo http
+
+app.UseCors("Allowlocalhost");
+app.UseAuthentication();
+app.UseAuthorization();
+
 app.MapControllers();
 app.Run();
+
 
 ///FIN DE VERSION
 

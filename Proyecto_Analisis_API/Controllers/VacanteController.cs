@@ -292,5 +292,41 @@ namespace Proyecto_Analisis_API.Controllers
 
             return Ok("Vacante eliminada correctamente.");
         }
+
+        // ============================
+        // IMG
+        // ============================
+        [HttpPost("upload-image")]
+        [RequestSizeLimit(10_000_000)] // 10 MB, ajusta si quieres
+        public async Task<IActionResult> UploadImage([FromForm] IFormFile file)
+        {
+            if (file == null || file.Length == 0)
+                return BadRequest("No se envió archivo.");
+
+            var allowed = new[] { ".jpg", ".jpeg", ".png", ".gif", ".webp" };
+            var ext = Path.GetExtension(file.FileName).ToLowerInvariant();
+            if (!allowed.Contains(ext))
+                return BadRequest("Formato no permitido. Usa JPG, PNG, GIF o WEBP.");
+
+            var uploadsPath = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "uploads");
+            if (!Directory.Exists(uploadsPath))
+                Directory.CreateDirectory(uploadsPath);
+
+            var fileName = $"{Guid.NewGuid():N}{ext}";
+            var fullPath = Path.Combine(uploadsPath, fileName);
+
+            using (var stream = new FileStream(fullPath, FileMode.Create))
+            {
+                await file.CopyToAsync(stream);
+            }
+
+            // Construye URL pública (ajusta host si usas HTTPS/dominio)
+            var baseUrl = $"{Request.Scheme}://{Request.Host}";
+            var url = $"{baseUrl}/uploads/{fileName}";
+
+            return Ok(new { url, fileName });
+        }
+
+
     }
 }
